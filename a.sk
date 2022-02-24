@@ -1,0 +1,178 @@
+
+#command /lobbi:
+#	trigger:
+#		open gui "LobbySelector" to player
+#
+#command /shop [<integer>] [<text>]:
+#	trigger:
+#		if arg-2 is "open":
+#			open gui "%arg-1%" to player
+#		else if arg-2 is "set":
+#			broadcast "set %arg-1%"
+#			create new gui with id "Shop %arg-1%" with virtual chest with 6 rows named "&4Lobby Selector":
+#				loop 6 times:
+#					make gui slot (9 * loop-number - 8) with iron bar named ""
+#				loop {shop::%arg-1%::*}:
+#					broadcast "b"
+#			wait 1 tick
+#			open last gui to player
+#		else if arg-2 is "edit":
+#			broadcast "edit %arg-1%"
+#			create new gui with virtual chest with 6 rows named "&4Shop editor":
+#				set {_arg1} to arg-1
+#				loop 6 times:
+#					set {_loopnumber} to loop-number
+#					if {shop::%{_arg1}%::%{_loopnumber}%::1} is air:
+#						make gui slot (9 * {_loopnumber} - 9) with green glass pane named "&f":
+#							ShopEditBuy(player, {_arg1}, {_loopnumber})
+#					else if {shop::%{_arg1}%::%{_loopnumber}%::1} does not exist:
+#						make gui slot (9 * {_loopnumber} - 9) with green glass pane named "&f":
+#							ShopEditBuy(player, {_arg1}, {_loopnumber})
+#					else:
+#						make gui slot (9 * {_loopnumber} - 9) with {shop::%{_arg1}%::%{_loopnumber}%::1}:
+#							ShopEditBuy(player, {_arg1}, {_loopnumber})
+#					make next gui slot to iron bar named "&f"
+#					loop 7 times:
+#						set {_loopnumber2} to loop-number-2
+#						if {shopcost::%{_arg1}%::%{_loopnumber}%::%{_loopnumber2}%} is air:
+#							make gui slot (9 * {_loopnumber} - 8 + {_loopnumber2}) with light gray glass pane named "&f":
+#								ShopEditSell(player, {_arg1}, {_loopnumber})
+#						else if {shopcost::%{_arg1}%::%{_loopnumber}%::%{_loopnumber2}%} does not exist:
+#							make gui slot (9 * {_loopnumber} - 8 + {_loopnumber2}) with light gray glass pane named "&f":
+#								ShopEditSell(player, {_arg1}, {_loopnumber})
+#						else:
+#							make gui slot (9 * {_loopnumber} - 8 + {_loopnumber2}) with {shopcost::%{_arg1}%::%{_loopnumber}%::%{_loopnumber2}%}:
+#								ShopEditSell(player, {_arg1}, {_loopnumber})
+#			open last gui to player
+#		else:
+#			broadcast "/shop (shop number) open"
+#
+#function ShopEditBuy(p: player, shopnumber: integer, linenumber: number):
+#	create new gui with id "ShopEdit %{_shopnumber}%:buy:%{_linenumber}%" with virtual chest with 1 rows named "&f売るものを設定します":
+#		run when close:
+#			loop 9 times:
+#				set {shop::%{_shopnumber}%::%{_linenumber}%::%loop-number%} to slot (loop-number - 1) of gui-inventory
+#	open last gui to {_p}
+#	loop 9 times:
+#		set slot loop-number - 1 of {_p}'s current inventory to {shop::%{_shopnumber}%::%{_linenumber}%::%loop-number%}
+#
+#function ShopEditSell(p: player, shopnumber: integer, linenumber: number):
+#	create new gui with id "ShopEdit %{_shopnumber}%:sell:%{_linenumber}%" with virtual chest with 1 rows named "&fコストを設定します":
+#		run when close:
+#			delete {shopcost::%{_shopnumber}%::%{_linenumber}%::*}
+#			loop 9 times:
+#				slot (loop-number - 1) of gui-inventory is not air
+#				add slot (loop-number - 1) of gui-inventory to {shopcost::%{_shopnumber}%::%{_linenumber}%::*}
+#	open last gui to {_p}
+#	loop 9 times:
+#		set slot loop-number - 1 of {_p}'s current inventory to {shopcost::%{_shopnumber}%::%{_linenumber}%::%loop-number%}
+
+command /yaw <number> <number>:
+	trigger:
+		loop 40 times:
+			shoot a snowball
+			rotate(player, arg-1, arg-2)
+			wait 1 tick
+
+function rotate(player: player, y: number, p: number):
+	set {_velo} to velocity of {_player}
+	set {_packet} to new play_server_position packet
+	set double pnum 0 of {_packet} to {_player}'s x position
+	set double pnum 1 of {_packet} to {_player}'s y position
+	set double pnum 2 of {_packet} to {_player}'s z position
+	set float pnum 0 of {_packet} to {_y} + {_player}'s yaw
+	set float pnum 1 of {_packet} to {_p} + {_player}'s pitch
+#	set boolean pnum 0 of {_packet} to true
+	send {_player} packet {_packet}
+	message "%java.util.Set pnum 0 of {_packet}%" to {_player}
+#	wait 1 tick
+#	set boolean pnum 0 of {_packet} to false
+#	send {_player} packet {_packet}
+
+command /allpackettypes [<string>]:
+	trigger:
+		if string-arg is set:
+			message "&2Messaging all packettypes that contain &6%string-arg%&2!"
+		else:
+			message "&2Messaging all packettypes!"
+		loop all packettypes:
+			if string-arg is set:
+				if "%loop-value%" contains string-arg:
+					message "%loop-value%"
+			else:
+				message "%loop-value%"
+				
+#function rotate(target: player, yaw: number, pitch: number):
+#	execute console command "tp %{_target}% ~ ~ ~ ~%{_yaw}% ~%{_pitch}%"
+
+on toggle sneak:
+	player is not sneaking
+	set {shiftcool::%player%} to 55
+	wait 1 tick
+	set {charge.%player%} to 1
+	set {charge2.%player%} to 1
+	set {_loops} to 0
+	while player is sneaking:
+		add 1 to {_loops}
+		if {charge2.%player%} is 1:
+			delete {charge2.%player%}
+			set {_loops} to 13
+			set {shiftcool::%player%} to 42
+		if {_loops} <= 12:
+			shoot snowball from player at speed 3.7
+			add "Gatling" to the scoreboard tags of shot snowball
+			play sound "entity.zombie.attack_iron_door" with pitch 0.5 + ((1.5 / 9) * {_loops}) at player
+			play sound "entity.parrot.hurt" with pitch 1 + ((1 / 9) * {_loops}) at player
+			rotate(player, {_y}, -3)
+			remove 1 from {shiftcool::%player%}
+			send actionbar "&e&l&nCoin&8&n: &6&n%{coin.%uuid of player%}%&0&nΞ&7&l&nCooldown&8&n: &6&n%{shiftcool::%player%}% tick" to player
+			wait "%floor(15 * ((4 / 5) ^ {_loops}))% tick" parsed as a timespan
+		if {_loops} > 12:
+			gatlingskill(player, 2)
+			rotate(player, ({_y} * 1.5), -5)
+			wait 2 tick
+		if {_loops} is 34:
+			apply slowness 3 without particles to player for 20 tick
+			stop loop
+	delete {charge.%player%}
+	delete {charge2.%player%}
+	shiftcool(player, 40+(55-{shiftcool::%player%}))
+	apply slowness 3 without particles to player for 40 tick
+	play sound "block.anvil.place" with pitch 1.5 at player
+	wait 1 tick
+	play sound "block.anvil.place" with pitch 1.3 at player
+	wait 7 tick
+	play sound "block.fire.extinghish" with pitch 1.75 at player
+	wait 10 tick
+	if {where.%player%} is not set:
+		stop
+	play sound "block.iron_door.open" with pitch 0.7 at player
+	wait 6 tick
+	loop 3 times:
+		if {where.%player%} is not set:
+			stop
+		play sound "entity.skeleton.step" with pitch 0.5 at player
+		wait 10 tick
+		play sound "block.piston.extend" with pitch 0.5 at player
+		wait 20 tick
+		play sound "block.piston.contract" with pitch 0.5 at player
+
+function gatlingskill(p: player, l: integer):
+	set {_u} to uuid of {_p}
+	loop {_l} times:
+		remove 1 from {shiftcool::%{_p}%}
+		send actionbar "&e&l&nCoin&8&n: &6&n%{coin.%{_u}%}%&0&nΞ&7&l&nCooldown&8&n: &6&n%{shiftcool::%{_p}%}% tick" to {_p}
+		shoot snowball from {_p} at speed 3.7
+		add "Gatling" to the scoreboard tags of shot snowball
+		wait 1 tick
+
+function shiftcool(p: player, t: number):
+	set {shiftcool::%{_p}%} to {_t}
+	while {shiftcool::%{_p}%} is more than 0:
+		wait 1 tick
+		remove 1 from {shiftcool::%{_p}%}
+		set {_u} to uuid of {_p}
+		send actionbar "&e&l&nCoin&8&n: &6&n%{coin.%{_u}%}%&0&nΞ&7&l&nCooldown&8&n: &6&n%{shiftcool::%{_p}%}% tick" to {_p}
+		delete {shiftcool::%{_p}%}
+
+ 
